@@ -1,0 +1,11 @@
+Poner fina la memoria, comentar más extensamente cada paso en galego.
+
+Cosas como.
+    Mencionar que la distribución de los datos no sigue una normal para muchas columnas sino una power distribution de esas.
+    Hablar acerca del balanceo de clases.
+    Reejecutar los UMAPS y el PCA, mencionar que efectivamente el UMAP no cambia tras hacer el PCA, lo que significa que el PCA cunde.
+    También falta dropear específicamente todas las columnas que no interesen al pCA (nos quedamos con 61 creo).
+    Quitar el código que sobra y las barbaridades varias que pusimos.
+    No olvidar las ganas de pasarlo bien.
+    Mencionar lo de las columnas duplicadas y citar alguno de los papers acerca del dataset para que se vea que no lo inventamos.
+    
