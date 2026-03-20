@@ -1,0 +1,3 @@
+- escalado / normalizacion datos:
+    - blog: https://sebastianraschka.com/Articles/2014_about_feature_scaling.html
+    - articulo: https://arxiv.org/html/2506.08274v2
