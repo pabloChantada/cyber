@@ -1,0 +1,122 @@
+\documentclass[12pt,a4paper]{article}
+
+% Paquetes básicos
+\usepackage[utf8]{inputenc}
+\usepackage[spanish, es-tabla]{babel} % es-tabla para que poña "Tabla" ou "Táboa" dependendo da config, galician non está completo ás veces, spanish é seguro para formatos
+\addto\captionsspanish{\renewcommand{\tablename}{Táboa}} % Forzar "Táboa" en galego
+\addto\captionsspanish{\renewcommand{\listtablename}{Índice de táboas}}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{lipsum}
+\usepackage{xcolor}
+\usepackage{float}
+
+\usepackage{epigraph}
+\usepackage{cite}
+\usepackage[listings]{tcolorbox}
+\tcbuselibrary{listings, skins, breakable}
+\lstloadlanguages{SQL}
+\usepackage{subcaption}
+\usepackage{url}
+\usepackage{booktabs}
+
+% Configurar márgenes
+\geometry{
+    top=2cm,
+    bottom=2cm,
+    left=2cm,
+    right=2cm
+}
+
+% Configurar listings
+\lstset{
+    extendedchars=true,
+    inputencoding=utf8,
+    basicstyle=\small\ttfamily,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    captionpos=b
+}
+
+% Información del documento
+\title{Entrenamiento de modelos de IA}
+\author{Marcelo Ferreiro Sánchez, Pablo Chantada Saborido\\ Laura Cabaleiro Pintos \& Pepe Romero Conde}
+\date{\today}
+
+\lstdefinelanguage{SQL}{
+  morekeywords={
+    SELECT,FROM,WHERE,AND,OR,INSERT,INTO,VALUES,UPDATE,SET,DELETE,CREATE,TABLE,
+    ALTER,DROP,JOIN,INNER,LEFT,RIGHT,FULL,ON,AS,ORDER,BY,GROUP,HAVING,DESC,ASC,
+    DISTINCT,COUNT,SUM,AVG,MIN,MAX,IN,IS,NOT,NULL,LIKE,BETWEEN,EXISTS,UNION
+  },
+  sensitive=false,
+  morecomment=[l]{--},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]',
+  morestring=[b]"
+}
+
+\definecolor{azulito}{RGB}{186,200,211}
+\definecolor{azul_oscuro}{RGB}{35,68,93}
+\definecolor{turquesa}{RGB}{174,143,171}
+\definecolor{terminalbg}{RGB}{255,255,255}
+
+\lstset{
+  language=SQL,
+  basicstyle=\color{azul_oscuro}\ttfamily\small,
+  keywordstyle=\color{white}\bfseries,
+  commentstyle=\color{gray}\itshape,
+  stringstyle=\color{turquesa},
+  backgroundcolor=\color{azulito},
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  breaklines=true,
+  tabsize=2
+}
+
+\lstdefinestyle{terminal}{
+    backgroundcolor=\color{terminalbg},
+    basicstyle=\ttfamily\small\color{azulito},
+    frame=single,
+    breaklines=true,
+    showstringspaces=false,
+}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+\section{Introdución}
+
+AdaBoost \cite{freund1996experiments}, GAN \cite{goodfellow2014generative}
+
+\section{GAN}
+\section{AdaBoost}
+
+Libraría de Optimización Bayesiana \cite{bayopt}, en particular programación entera (el número de estimadores en AdaBoost tiene que ser un número entero) \cite{Garrido_Merch_n_2020}.
+\subsection{Dataset Orixinal}
+\subsection{Dataset Aumentado}
+
+\section{Evaluación e comparativa}
+
+\section{Conclusións}
+\section{Traballo Futuro}
+
+\newpage
+
+\bibliographystyle{IEEEtran}
+\bibliography{licencias}
+
+
+\end{document}
