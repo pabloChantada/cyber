@@ -1,0 +1,11 @@
+run_id: "b45e56"
+created_at_utc: "2026-04-15T20:49:06.649560+00:00"
+args:
+  batch_size: 512
+  csv_flush_every: 5
+  epocas: 1000
+  eval_every: 2
+  lr: 0.0001
+  num_workers: 4
+  p_dropout: 0.04
+  z_dim: 6
