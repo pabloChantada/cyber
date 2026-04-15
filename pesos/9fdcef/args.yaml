@@ -1,0 +1,11 @@
+run_id: "9fdcef"
+created_at_utc: "2026-04-15T18:02:36.802055+00:00"
+args:
+  batch_size: 16
+  csv_flush_every: 5
+  epocas: 25000
+  eval_every: 2
+  lr: 0.0001
+  num_workers: 0
+  p_dropout: 0.01
+  z_dim: 6

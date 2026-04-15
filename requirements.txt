@@ -2,3 +2,4 @@ bayesian-optimization
 scikit-learn
 torch
 pandas
+pyyaml

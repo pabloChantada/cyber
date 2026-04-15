@@ -1,0 +1,10 @@
+run_id: "58ca59"
+created_at_utc: "2026-04-15T01:35:17.576153+00:00"
+args:
+  batch_size: 50000
+  csv_flush_every: 5
+  epocas: 25000
+  eval_every: 10
+  lr: 1e-05
+  p_dropout: 0.0001
+  z_dim: 8

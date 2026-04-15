@@ -1,0 +1,16 @@
+[
+  {
+    "target": 0.42505494505494507,
+    "params": {
+      "n_estimators": 435,
+      "learning_rate": 1.79550821434099
+    }
+  },
+  {
+    "target": 0.32897435897435895,
+    "params": {
+      "n_estimators": 77,
+      "learning_rate": 0.047073680484651576
+    }
+  }
+]

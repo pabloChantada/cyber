@@ -1,9 +1,7 @@
 import argparse
 import csv
-import hashlib
 import math
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 import torch
@@ -11,8 +9,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 
 from .RedeGAN import Xerador, Discriminador
-from p1_modelos.utilidades.init_dataset import init_dataset
-from p1_modelos.utilidades.avaliar_discriminador import avaliar_discriminador
+from p1_modelos.utilidades import init_dataset, avaliar_discriminador, crear_run_dir, gardar_yaml_args, append_rows_csv
 
 #--
 parser = argparse.ArgumentParser(prog='optimizacion bayesiana do adaboost', epilog='-    :)   -')
@@ -21,38 +18,16 @@ parser.add_argument('-p_dropout', default=0.1, type=float)
 parser.add_argument('-z_dim', default=16, type=int)  
 parser.add_argument('-b', dest='batch_size', default=256, type=int)  
 parser.add_argument('--eval_every', default=10, type=int)
+parser.add_argument('-lr', default=1e-4, type=float)  
 parser.add_argument('--csv_flush_every', default=5, type=int)
+parser.add_argument('--num_workers', default=None, type=int)
 args = parser.parse_args()
 
 
-def crear_run_dir(base_dir: Path) -> tuple[str, Path]:
-    base_dir.mkdir(parents=True, exist_ok=True)
-    while True:
-        run_id = hashlib.sha1(str(time.time_ns()).encode('utf-8')).hexdigest()[:6]
-        run_dir = base_dir / run_id
-        if not run_dir.exists():
-            run_dir.mkdir(parents=True)
-            return run_id, run_dir
 
 
-def gardar_yaml_args(path_yaml: Path, args_dict: dict, run_id: str) -> None:
-    created_at = datetime.now(timezone.utc).isoformat()
-    lines = [
-        f'run_id: "{run_id}"',
-        f'created_at_utc: "{created_at}"',
-        'args:',
-    ]
-    for clave, valor in sorted(args_dict.items()):
-        lines.append(f'  {clave}: {valor}')
-    path_yaml.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
 
-def append_rows_csv(path_csv: Path, rows: list[dict]) -> None:
-    if not rows:
-        return
-    with path_csv.open('a', newline='', encoding='utf-8') as f_csv:
-        writer = csv.DictWriter(f_csv, fieldnames=rows[0].keys())
-        writer.writerows(rows)
 
 
 run_id, run_dir = crear_run_dir(Path('pesos'))
@@ -81,15 +56,16 @@ G = G.to(device)
 D = D.to(device)
 
 criterion = nn.BCEWithLogitsLoss()
-optim_G = torch.optim.Adam(G.parameters(), lr=1e-4, betas=(0.5, 0.999))
-optim_D = torch.optim.Adam(D.parameters(), lr=1e-4, betas=(0.5, 0.999))
+optim_G = torch.optim.Adam(G.parameters(), lr=args.lr, betas=(0.5, 0.999))
+optim_D = torch.optim.Adam(D.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
 
-loader = DataLoader(TensorDataset(X_train, y_train_bin), batch_size=args.batch_size, shuffle=True)
-val_loader = DataLoader(TensorDataset(X_val, y_val_bin), batch_size=args.batch_size, shuffle=False)
+loader = DataLoader(TensorDataset(X_train, y_train_bin), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+val_loader = DataLoader(TensorDataset(X_val, y_val_bin), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
 best_val_auc = float('-inf')
 csv_buffer = []
+inicio_bloque = time.time()
 
 for epoca in range(args.epocas):
     for (ejemplos, etiquetas) in loader:
@@ -128,6 +104,8 @@ for epoca in range(args.epocas):
 
 
     if (epoca + 1) % args.eval_every == 0:
+        tempo_bloque_seg = int(time.time() - inicio_bloque)
+        minutos_bloque, segundos_bloque = divmod(tempo_bloque_seg, 60)
         auc_roc_val, accuracy_val = avaliar_discriminador(D, val_loader, device)
         is_best = 0
         if not math.isnan(auc_roc_val) and auc_roc_val > best_val_auc:
@@ -151,9 +129,11 @@ for epoca in range(args.epocas):
             csv_buffer.clear()
 
         print(
-            f"Epoca {epoca + 1}: Val AUC-ROC={auc_roc_val:.4f}, Val Accuracy={accuracy_val:.4f}, "
+            f"Epoca {epoca + 1}: ( {minutos_bloque:02d}m:{segundos_bloque:02d}s )"
+            f"Val AUC-ROC={auc_roc_val:.4f}, Val Accuracy={accuracy_val:.4f}, "
             f"Pérdida Discriminador={perdida_discriminador.item():.4f}, Pérdida Xerador={perdida_generador.item():.4f}"
         )
+        inicio_bloque = time.time()
 
 if csv_buffer:
     append_rows_csv(metrics_csv, csv_buffer)

@@ -1,6 +1,8 @@
 import pandas as pd
 
 def init_dataset(dataset='dataset', tensor=False):
+    print(f'[*] Usando os arquivos .parquet do directorio {dataset}') 
+
     train = pd.read_parquet(dataset + "/train.parquet")
     val = pd.read_parquet(dataset + "/val.parquet")
     test = pd.read_parquet(dataset + "/test.parquet")
@@ -31,4 +33,4 @@ def init_dataset(dataset='dataset', tensor=False):
         y_val_bin = _to_tensor(y_val_bin, reshape=(-1, 1))
         y_test_bin = _to_tensor(y_test_bin, reshape=(-1, 1))
 
-        return X_train, y_train, y_train_bin, X_val, y_val, y_val_bin, X_test, y_test, y_test_bin
+    return X_train, y_train, y_train_bin, X_val, y_val, y_val_bin, X_test, y_test, y_test_bin

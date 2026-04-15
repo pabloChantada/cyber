@@ -1,0 +1,10 @@
+run_id: "73a630"
+created_at_utc: "2026-04-15T01:13:08.996882+00:00"
+args:
+  batch_size: 50000
+  csv_flush_every: 5
+  epocas: 10000
+  eval_every: 10
+  lr: 5e-05
+  p_dropout: 0.0001
+  z_dim: 2
