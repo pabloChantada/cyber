@@ -4,11 +4,11 @@ class Xerador(nn.Module):
     def __init__(self, z_dim, x_dim):
         super().__init__()
         self.rede = nn.Sequential(
-            nn.Linear(z_dim, 128),
+            nn.Linear(z_dim, 16),
             nn.ReLU(),
-            nn.Linear(128, 256),
+            nn.Linear(16, 32),
             nn.ReLU(),
-            nn.Linear(256, x_dim)
+            nn.Linear(32, x_dim)
         )
 
     def forward(self, z):
@@ -19,12 +19,12 @@ class Discriminador(nn.Module):
         super().__init__()
 
         self.rede = nn.Sequential(
-            nn.Linear(x_dim, 256),
+            nn.Linear(x_dim, 64),
             nn.ReLU(),
             nn.Dropout(p_dropout),
-            nn.Linear(256, 128),
+            nn.Linear(64, 32),
             nn.ReLU(),
-            nn.Linear(128, numero_clases)
+            nn.Linear(32, numero_clases)
         )
 
     def forward(self, x):

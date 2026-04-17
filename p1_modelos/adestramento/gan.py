@@ -22,6 +22,7 @@ def main():
     parser.add_argument('-lr', default=1e-4, type=float)
     parser.add_argument('--csv_flush_every', default=5, type=int)
     parser.add_argument('--num_workers', default=0, type=int)
+    parser.add_argument('--multiclase', action='store_true', help='Adestra GAN en modo multiclase (por defecto: binario)')
     args = parser.parse_args()
 
     run_id, run_dir = crear_run_dir(Path('pesos'))
@@ -40,21 +41,47 @@ def main():
 
     X_train, y_train, y_train_bin, X_val, y_val, y_val_bin, X_test, y_test, y_test_bin = init_dataset(tensor=True)
 
+    if args.multiclase:
+        todas_etiquetas = set(y_train.unique()).union(set(y_val.unique())).union(set(y_test.unique()))
+        if 'BENIGN' not in todas_etiquetas:
+            raise ValueError("A etiqueta 'BENIGN' é obrigatoria para o modo multiclase")
+        if 'GENERATED' in todas_etiquetas:
+            raise ValueError("A etiqueta 'GENERATED' xa existe no dataset e está reservada para mostras sintéticas")
+
+        etiquetas_ordenadas = ['BENIGN'] + sorted(etiqueta for etiqueta in todas_etiquetas if etiqueta != 'BENIGN')
+        clase_a_indice = {etiqueta: indice for indice, etiqueta in enumerate(etiquetas_ordenadas)}
+
+        benign_idx = clase_a_indice['BENIGN']
+        generated_idx = len(etiquetas_ordenadas)
+        numero_clases = len(etiquetas_ordenadas) + 1
+
+        y_train_target = torch.tensor(y_train.map(clase_a_indice).to_list(), dtype=torch.long)
+        y_val_target = torch.tensor(y_val.map(clase_a_indice).to_list(), dtype=torch.long)
+    else:
+        benign_idx = None
+        generated_idx = None
+        numero_clases = 1
+        y_train_target = y_train_bin
+        y_val_target = y_val_bin
+
     x_dim = X_train.shape[1]
 
     G = Xerador(args.z_dim, x_dim)
-    D = Discriminador(x_dim, p_dropout=args.p_dropout, numero_clases=1)
+    D = Discriminador(x_dim, p_dropout=args.p_dropout, numero_clases=numero_clases)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     G = G.to(device)
     D = D.to(device)
 
-    criterion = nn.BCEWithLogitsLoss()
+    if args.multiclase:
+        criterion = nn.CrossEntropyLoss()
+    else:
+        criterion = nn.BCEWithLogitsLoss()
     optim_G = torch.optim.Adam(G.parameters(), lr=args.lr, betas=(0.5, 0.999))
     optim_D = torch.optim.Adam(D.parameters(), lr=args.lr, betas=(0.5, 0.999))
 
-    loader = DataLoader(TensorDataset(X_train, y_train_bin), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-    val_loader = DataLoader(TensorDataset(X_val, y_val_bin), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    loader = DataLoader(TensorDataset(X_train, y_train_target), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
+    val_loader = DataLoader(TensorDataset(X_val, y_val_target), batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
 
     best_val_auc = float('-inf')
     csv_buffer = []
@@ -66,8 +93,12 @@ def main():
             ejemplos = ejemplos.to(device)
             etiquetas = etiquetas.to(device)
 
-            unos = torch.ones_like(etiquetas)
-            ceros = torch.zeros_like(etiquetas)
+            if args.multiclase:
+                etiquetas_fake = torch.full((ejemplos.size(0),), generated_idx, dtype=torch.long, device=device)
+                etiquetas_benign = torch.full((ejemplos.size(0),), benign_idx, dtype=torch.long, device=device)
+            else:
+                unos = torch.ones_like(etiquetas)
+                ceros = torch.zeros_like(etiquetas)
 
             #-- discriminador
             z = torch.randn(ejemplos.size(0), args.z_dim, device=device)
@@ -77,7 +108,10 @@ def main():
             D_fake = D(fake.detach())
 
             perdida_ejemplos = criterion(D_ejemplos, etiquetas)
-            perdida_fake = criterion(D_fake, ceros)
+            if args.multiclase:
+                perdida_fake = criterion(D_fake, etiquetas_fake)
+            else:
+                perdida_fake = criterion(D_fake, ceros)
 
             perdida_discriminador = perdida_ejemplos + perdida_fake
 
@@ -89,7 +123,10 @@ def main():
             z = torch.randn(ejemplos.size(0), args.z_dim, device=device)
             fake = G(z)
 
-            perdida_generador = criterion(D(fake), unos)
+            if args.multiclase:
+                perdida_generador = criterion(D(fake), etiquetas_benign)
+            else:
+                perdida_generador = criterion(D(fake), unos)
 
             optim_G.zero_grad()
             perdida_generador.backward()
@@ -99,7 +136,13 @@ def main():
         if (epoca + 1) % args.eval_every == 0:
             tempo_bloque_seg = int(time.time() - inicio_bloque)
             minutos_bloque, segundos_bloque = divmod(tempo_bloque_seg, 60)
-            auc_roc_val, accuracy_val = avaliar_discriminador(D, val_loader, device)
+            auc_roc_val, accuracy_val = avaliar_discriminador(
+                D,
+                val_loader,
+                device,
+                multiclase=args.multiclase,
+                benign_idx=benign_idx,
+            )
             is_best = 0
             if not math.isnan(auc_roc_val) and auc_roc_val > best_val_auc:
                 best_val_auc = auc_roc_val
