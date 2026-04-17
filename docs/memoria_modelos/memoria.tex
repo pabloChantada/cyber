@@ -257,7 +257,7 @@ número de características ca o dataset. O discriminador recibe unha mostra do 
 \caption{Arquitectura da GAN empregada. O xerador transforma un vector latente nunha mostra sintética co mesmo número de características ca entrada, mentres que o discriminador devolve un único logit para a clasificación binaria.}
 \end{figure}
 
-Tamén se parametrizaron o \emph{dropout}, o tamaño do lote, a frecuencia de avaliación, o número de \emph{workers} e a dimensión do espazo latente. Isto permitiu facer probas curtas para verificar o funcionamento da tubaxe e probas longas para intentar estabilizar o adestramento.
+Tamén se parametrizaron o \emph{dropout}, o tamaño do lote, a frecuencia de avaliación e a dimensión do espazo latente. Isto permitiu facer probas curtas para verificar o funcionamento da tubaxe e probas longas para intentar estabilizar o adestramento.
 
 \subsection{Resultados da clasificación binaria co discriminador}
 
@@ -267,22 +267,24 @@ o modelo aínda non converxía: a AUC-ROC de validación quedaba arredor de
 0,74--0,78 e a accuracy arredor de 0,45--0,47. Estes valores indican que o
 adestramento adversario necesitaba moitas máis épocas para estabilizarse.
 
-Posteriormente realizouse un adestramento longo, no que se observaron
-métricas de validación moito máis altas arredor das épocas 2490--2530. Nese
-intervalo acadáronse valores de AUC-ROC arredor de 0,94 e unha accuracy
-próxima a 0,90. Isto mostra que a arquitectura era capaz de aprender unha fronteira
-útil, pero cun custo de adestramento moi superior ao de AdaBoost.
-
+Posteriormente realizouse un adestramento máis longo, con métricas rexistradas
+ata a época 440. Nesta execución acadouse unha AUC-ROC máxima de validación
+de 0,9499 na época 310 e unha \emph{accuracy} máxima de validación de 0,9300
+na época 388. Isto mostra que a arquitectura era capaz de aprender unha
+fronteira útil, pero cun custo de adestramento moi superior ao de AdaBoost.
 
 Nas probas curtas empregouse \texttt{z\_dim=6}, \texttt{dropout=0.01},
-\texttt{batch\_size=512} e \texttt{lr=0.0001}. A diferenza principal entre
-execucións foi o dispositivo empregado e o número de \emph{workers}.
+\texttt{batch\_size=512} e \texttt{lr=0.0001}. Estas execucións servíron
+principalmente para comprobar o funcionamento da arquitectura antes de realizar
+un adestramento máis longo.
 
 \begin{table}[H]
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
 \caption{Resumo dos resultados dispoñíbeis da GAN en validación}
+
+
 \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.22\textwidth}
 >{\centering\arraybackslash}p{0.14\textwidth}
 >{\centering\arraybackslash}p{0.15\textwidth}
@@ -291,18 +293,57 @@ X@{}}
 \toprule
 \textbf{Execución} & \textbf{Épocas} & \textbf{Mellor AUC-ROC} & \textbf{Mellor accuracy} & \textbf{Lectura} \\
 \midrule
-Proba curta MPS & 6 & 0,7700 & 0,4683 & Proba funcional, pero sen converxencia. \\
-Proba curta CUDA, \texttt{workers=8} & 6 & 0,7811 & 0,4653 & Mellora lixeira en AUC, aínda con accuracy baixa. \\
-Proba curta CUDA, \texttt{workers=2} & 6 & 0,7832 & 0,4519 & Resultado semellante ás demais probas curtas. \\
-Adestramento longo & $\sim$2500 & 0,9356 & 0,9017 & Converxencia clara tras un adestramento prolongado. \\
+Proba curta 1 & 6 & 0,7700 & 0,4683 & Proba funcional, pero sen converxencia. \\
+Proba curta 2 & 6 & 0,7811 & 0,4653 & Mellora lixeira en AUC, aínda con accuracy baixa. \\
+Proba curta 3 & 6 & 0,7832 & 0,4519 & Resultado semellante ás demais probas curtas. \\
+Adestramento longo & 440 & 0,9499 & 0,9300 & Converxencia clara tras un adestramento prolongado. \\
 \bottomrule
 \end{tabularx}
+
 \end{table}
 
-Cómpre sinalar que estas métricas corresponden a validación. Non se conserva
-unha avaliación final da GAN sobre test co mesmo nivel de detalle ca AdaBoost,
-polo que a comparación cuantitativa entre ambos modelos debe facerse con
-cautela.
+
+
+Ademais das métricas de validación, tamén se avaliou o mellor discriminador
+da GAN sobre o conxunto de test. Nesta avaliación obtívose unha
+\emph{accuracy} de 0,9327, unha \emph{precision} de 0,9273, un
+\emph{recall} de 0,9844, un F1-score de 0,9550 e unha AUC-ROC de 0,9544
+para a clase \texttt{ATTACK}. Estes resultados permiten comparar a GAN co
+modelo base usando métricas equivalentes sobre test.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Resultados da GAN sobre o conxunto de test}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-score} & \textbf{AUC-ROC} \\
+\midrule
+Discriminador GAN & 0,9327 & 0,9273 & 0,9844 & 0,9550 & 0,9544 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{imagenes/gan_matriz_confusion_test.jpeg}
+    \caption{Matriz de confusión do discriminador da GAN sobre o conxunto de test. O modelo detecta correctamente 19\,492 ataques e 5\,971 fluxos normais, con 1\,529 falsos positivos e 308 falsos negativos.}
+\end{figure}
+
+
+A matriz de confusión mostra que a GAN ten unha capacidade moi alta para
+detectar ataques, xa que só deixa sen detectar 308 mostras da clase
+\texttt{ATTACK}. O principal erro aparece nos falsos positivos: 1\,529 fluxos
+normais son clasificados como ataques. Nun contexto de detección de intrusións,
+este comportamento é razoábel, xa que é preferíbel xerar algunhas alertas
+adicionais antes que deixar pasar tráfico malicioso.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{imagenes/gan_roc_test.jpeg}
+    \caption{Curva ROC do discriminador da GAN sobre o conxunto de test. A AUC-ROC acadada é 0,9544.}
+\end{figure}
 
 
 \begin{figure}[H]
@@ -314,38 +355,41 @@ cautela.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{imagenes/gan_aucroc_validacion.jpeg}
-    \caption{Evolución da AUC-ROC de validación ao longo do adestramento da GAN. Os puntos vermellos marcan as épocas nas que se mellorou o mellor valor acadado ata ese momento. Apréciase unha mellora rápida nas primeiras épocas e unha estabilización posterior arredor de 0,94--0,95.}
+    \caption{Evolución da AUC-ROC de validación ao longo do adestramento da GAN. Os puntos vermellos marcan as épocas nas que se mellorou o mellor valor acadado ata ese momento. Apréciase unha mellora rápida nas primeiras épocas e unha estabilización posterior arredor de 0,94--0,95, cun máximo de 0,9499.}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{imagenes/gan_accuracy_validacion.jpeg}
-    \caption{Evolución da \emph{accuracy} de validación ao longo do adestramento da GAN. Os puntos vermellos indican as épocas nas que se acadou unha mellora do mellor valor ata o momento. Tras unha fase inicial inestábel, a \emph{accuracy} estabilízase arredor de 0,90.}
+    \caption{Evolución da \emph{accuracy} de validación ao longo do adestramento da GAN. Os puntos vermellos indican as épocas nas que se acadou unha mellora do mellor valor ata o momento. Tras unha fase inicial inestábel, a \emph{accuracy} estabilízase arredor de 0,92--0,93, cun máximo de 0,9300.}
 \end{figure}
 
 
-As gráficas anteriores amosan o comportamento típico dun adestramento
-adversario. Nas primeiras épocas obsérvase unha mellora rápida da AUC-ROC e
+As tres gráficas de adestramento anteriores amosan o comportamento típico dun
+adestramento adversario. Nas primeiras épocas obsérvase unha mellora rápida da AUC-ROC e
 da \emph{accuracy} de validación, mentres que posteriormente as curvas se
 estabilizan arredor de valores altos. Ao mesmo tempo, as perdas do xerador e
 do discriminador presentan oscilacións, o que reflicte a dificultade de
 equilibrar ambas redes durante o adestramento.
 
-
 \subsection{GAN como xerador de datos sintéticos}
 
-Un dos engadidos máis interesantes do traballo foi a implementación dunha tubaxe de \emph{data augmentation}. O script \texttt{xerar\_dataset.py} carga o 
-mellor xerador dispoñíbel, xera novas mostras en lotes e reconstrúe un novo \texttt{train.parquet}, mantendo \texttt{val.parquet} e \texttt{test.parquet} 
-sen cambios.
+Un dos engadidos máis interesantes do traballo foi a implementación dunha
+tubaxe de \emph{data augmentation}. Para iso, empregouse o mellor xerador
+da GAN para crear novas mostras sintéticas e incorporalas ao conxunto de
+adestramento, mantendo sen cambios os conxuntos de validación e test.
 
-O parámetro \texttt{p} controla a proporción de mostras reais que se quere manter no novo conxunto de adestramento. Nunha das execucións conservadas xeráronse 
-127\,400 mostras sintéticas adicionais e o novo \texttt{train} quedou en 254\,800 filas.
+O parámetro de proporción permitía controlar cantas mostras reais se mantiñan
+no novo conxunto de adestramento e cantas mostras sintéticas se engadían.
+Nunha das execucións conservadas xeráronse 127\,400 mostras sintéticas
+adicionais, polo que o novo conxunto de adestramento pasou de 127\,400 a
+254\,800 mostras.
 
-Hai que sinalar que o script etiqueta explicitamente as mostras xeradas como \texttt{SINTETICO} no parquet resultante. Polo tanto, o efecto exacto desta 
-augmentación depende de como se recargue ese dataset nas fases posteriores de adestramento e de se se traballa en binario ou en multiclase. A tubaxe quedou 
-implementada e funcional, pero non se chegou a pechar unha campaña experimental homoxénea que permitise cuantificar con precisión canto mellora AdaBoost cando 
-se adestra con este dataset aumentado.
-
+As mostras xeradas identificáronse como sintéticas no novo conxunto de datos.
+Posteriormente, este dataset aumentado empregouse para volver avaliar AdaBoost
+no escenario binario, mantendo os mesmos conxuntos de validación e test. Deste
+xeito puido comprobarse se a augmentación con mostras xeradas pola GAN melloraba
+ou non o rendemento do modelo base.
 
 \section{AdaBoost}
 
@@ -359,46 +403,64 @@ AdaBoost funcionaba correctamente sobre o dataset preprocesado e obter unha
 primeira estimación do rango de hiperparámetros útil.
 
 Na versión final empregouse optimización bayesiana para automatizar
-a procura de hiperparámetros. O espazo de busca incluíu
+a procura de hiperparámetros \cite{bayopt,Garrido_Merch_n_2020}. O espazo de busca incluíu
 \texttt{n\_estimators} entre 15 e 500 e \texttt{learning\_rate} entre 0.0001
 e 2. A execución final realizouse con 15 puntos aleatorios iniciais e 40
 iteracións adicionais de optimización. A función obxectivo foi o F1 micro en
 validación.
 
-O script permite executar AdaBoost tanto en binario como en multiclase. Se se
-activa o flag \texttt{--binary}, empréganse as etiquetas binarias; se non, úsanse
-as etiquetas multiclase orixinais. Isto permitiu avaliar o mesmo modelo nos
-dous escenarios sen modificar o código.
+AdaBoost avaliouse en dous escenarios diferentes. No primeiro empregáronse
+as etiquetas binarias, distinguindo entre \texttt{BENIGN} e \texttt{ATTACK}.
+No segundo mantivéronse as etiquetas multiclase orixinais do dataset. Deste
+xeito puido estudarse o comportamento do mesmo modelo tanto nun problema
+binario como nun problema de clasificación máis detallado.
 
 \subsection{Clasificación binaria}
 
-No escenario binario, AdaBoost obtivo o mellor resultado documentado da
-práctica en termos de relación custo-rendemento. A mellor configuración
-atopada no notebook foi \texttt{n\_estimators = 300} e
-\texttt{learning\_rate = 1.5}. Con esa configuración acadouse un F1 de
-validación cruzada de 0,9251 e, sobre o conxunto de test, unha
-\emph{accuracy} de 0,8872 e un F1 de 0,9265.
+No escenario binario, AdaBoost obtivo un resultado sólido sobre o conxunto de
+test, cunha \emph{accuracy} de 0,9144 e un F1 micro de 0,9144. O modelo
+amosou un \emph{recall} moi alto para a clase \texttt{ATTACK}, de 0,98,
+sacrificando parte do \emph{recall} da clase \texttt{BENIGN}, que quedou en
+0,73. Nun contexto de ciberseguridade, esta compensación é razoábel, xa que
+adoita ser preferíbel asumir máis falsos positivos antes que deixar pasar
+tráfico malicioso.
 
 O reparto do problema binario no dataset final foi o seguinte:
 35\,000 mostras \texttt{BENIGN} e 92\,400 \texttt{ATTACK} no adestramento,
-e 7\,500 / 19\,800 tanto en validación como en test. O modelo amosou un
-\emph{recall} moi alto para \texttt{ATTACK} (0,98), sacrificando parte do
-\emph{recall} da clase \texttt{BENIGN} (0,64). Nun contexto de
-ciberseguridade, esta compensación é aceptábel, xa que adoita ser preferíbel
-asumir máis falsos positivos antes que deixar pasar tráfico malicioso.
+e 7\,500 / 19\,800 tanto en validación como en test.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Resultados binarios de AdaBoost no dataset orixinal}
-\begin{tabular}{lcccc}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lccccccc}
 \toprule
-\textbf{Configuración} & \textbf{CV F1} & \textbf{Accuracy test} & \textbf{F1 test} & \textbf{Nota} \\
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Precision micro} & \textbf{Recall micro} & \textbf{F1 micro} & \textbf{F1 macro} & \textbf{F1 weighted} & \textbf{AUC-ROC} \\
 \midrule
-\texttt{300 est.}, \texttt{lr=1.5} & 0,9251 & 0,8872 & 0,9265 & \emph{Recall} \texttt{ATTACK} = 0,98 \\
+AdaBoost binario & 0,9144 & 0,9144 & 0,9144 & 0,9144 & 0,8837 & 0,9106 & 0,9474 \\
 \bottomrule
 \end{tabular}
+}
+\caption{Resultados binarios de AdaBoost no conxunto de test}
 \end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{imagenes/adaboost_matriz_binaria.jpeg}
+    \caption{Matriz de confusión de AdaBoost no escenario binario. O modelo clasifica correctamente 5\,466 mostras benignas e 19\,498 ataques, con 2\,034 falsos positivos e 302 falsos negativos.}
+\end{figure}
+
+A matriz de confusión de AdaBoost amosa un comportamento semellante ao da GAN:
+o modelo detecta case todos os ataques, con só 302 falsos negativos. Porén,
+confunde unha parte maior do tráfico benigno, xerando 2\,034 falsos positivos.
+Isto explica que o \emph{recall} da clase \texttt{ATTACK} sexa moi alto,
+mentres que o \emph{recall} da clase \texttt{BENIGN} queda máis penalizado.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{imagenes/adaboost_roc_binario.jpeg}
+    \caption{Curva ROC de AdaBoost no escenario binario. A AUC-ROC acadada sobre o conxunto de test é 0,9474.}
+\end{figure}
 
 As figuras seguintes recollen a evolución da busca bayesiana no caso binario.
 Obsérvase a converxencia do máximo acumulado e a localización das mellores
@@ -424,17 +486,85 @@ etiquetas orixinais do dataset, polo que o problema é máis difícil ca no caso
 binario: ademais de distinguir tráfico benigno fronte a ataque, o modelo debe
 identificar o tipo concreto de tráfico ou ataque.
 
-O mellor modelo multiclase obtivo unha \emph{accuracy} de 0,4966 e un
-\emph{weighted F1} arredor de 0,44. As clases maioritarias e algunhas firmas
-específicas como \texttt{SSH-Patator} ou \texttt{FTP-Patator} tiveron un
-comportamento aceptábel, pero as clases moi raras seguiron moi penalizadas
-mesmo despois do rebalanceo.
+Na avaliación multiclase, AdaBoost acadou unha \emph{accuracy} de 0,65,
+cun \emph{macro F1} de 0,47 e un \emph{weighted F1} de 0,62. As clases
+maioritarias e algunhas firmas específicas como \texttt{SSH-Patator},
+\texttt{PortScan} ou \texttt{DDoS} tiveron un comportamento aceptábel, pero
+as clases moi raras ou máis difíciles, como \texttt{Heartbleed},
+\texttt{Web Attack - Brute Force}, \texttt{Web Attack - Sql Injection} e
+\texttt{Web Attack - XSS}, seguiron moi penalizadas.
 
-Nunha execución curta reproducíbel vía script obtívose \emph{accuracy} =
-0,4286, \emph{macro F1} = 0,3266 e \emph{weighted F1} = 0,4379. Esta proba
-non se toma como mellor resultado final, senón como unha evidencia adicional
-da dificultade do escenario multiclase e da importancia do orzamento dedicado
-á procura de hiperparámetros.
+\begin{table}[H]
+\centering
+\small
+\caption{Resumo das métricas multiclase de AdaBoost}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Macro precision} & \textbf{Macro recall} & \textbf{Macro F1} \\
+\midrule
+AdaBoost multiclase & 0,65 & 0,58 & 0,45 & 0,47 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Métricas ponderadas da avaliación multiclase}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modelo} & \textbf{Weighted precision} & \textbf{Weighted recall} & \textbf{Weighted F1} \\
+\midrule
+AdaBoost multiclase & 0,66 & 0,65 & 0,62 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{AUC-ROC one-vs-rest de AdaBoost no escenario multiclase}
+\begin{tabular}{lc}
+\toprule
+\textbf{Clase} & \textbf{AUC-ROC} \\
+\midrule
+\texttt{BENIGN} & 0,7956 \\
+\texttt{Bot} & 1,0000 \\
+\texttt{DDoS} & 0,9506 \\
+\texttt{DoS GoldenEye} & 0,9310 \\
+\texttt{DoS Hulk} & 0,8956 \\
+\texttt{DoS Slowhttptest} & 0,8387 \\
+\texttt{DoS slowloris} & 0,9199 \\
+\texttt{FTP-Patator} & 0,9998 \\
+\texttt{Heartbleed} & 0,9977 \\
+\texttt{Infiltration} & 0,9205 \\
+\texttt{PortScan} & 0,8888 \\
+\texttt{SSH-Patator} & 0,9994 \\
+\texttt{Web Attack - Brute Force} & 0,9073 \\
+\texttt{Web Attack - Sql Injection} & 0,8601 \\
+\texttt{Web Attack - XSS} & 0,9179 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{imagenes/adaboost_matriz_multiclase.jpeg}
+    \caption{Matriz de confusión de AdaBoost no escenario multiclase. Obsérvase un bo comportamento en clases como \texttt{DDoS}, \texttt{PortScan} e \texttt{SSH-Patator}, mentres que varias clases minoritarias quedan confundidas con \texttt{BENIGN} ou con outras clases maioritarias.}
+\end{figure}
+
+No caso multiclase obsérvase unha dificultade maior. O modelo identifica ben
+algunhas clases con patróns máis definidos, como \texttt{SSH-Patator},
+\texttt{DDoS} ou \texttt{PortScan}, pero varias clases minoritarias aparecen
+mal clasificadas ou directamente absorbidas por clases máis frecuentes. Isto
+é coherente coas métricas macro, que son máis baixas ca as ponderadas, e indica
+que o rendemento global está influído polas clases maioritarias.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{imagenes/adaboost_roc_multiclase.jpeg}
+    \caption{Curvas ROC one-vs-rest de AdaBoost no escenario multiclase. A maioría das clases presentan unha AUC elevada, aínda que a clase \texttt{BENIGN} obtén un valor menor, con AUC-ROC de 0,7956.}
+\end{figure}
 
 As figuras seguintes recollen a evolución da busca bayesiana no caso
 multiclase.
@@ -452,52 +582,107 @@ multiclase.
 \end{figure}
 
 
-\subsection{Dataset Aumentado}
+\subsection{Dataset aumentado}
 
-A continuación de empregar a GAN como xerador, deseñouse un fluxo para adestrar AdaBoost sobre un dataset ampliado artificialmente. 
-O obxectivo consistía en manter unha parte das mostras reais e engadir un número controlado de mostras sintéticas xeradas pola GAN, 
-de maneira que o conxunto de adestramento fose máis grande e potencialmente máis rico.
+A continuación de empregar a GAN como xerador, avaliouse tamén o uso de
+mostras sintéticas como técnica de \emph{data augmentation}. O obxectivo era
+comprobar se engadir datos xerados pola GAN ao conxunto de adestramento podía
+mellorar o rendemento de AdaBoost no escenario binario.
 
-Nunha das execucións conservadas obtívose un novo dataset aumentado con 254\,800 filas en adestramento, fronte ás 127\,400 do conxunto orixinal. 
-Posteriormente, este novo conxunto podía empregarse para volver adestrar AdaBoost sobre os datos xerados.
+Nunha das execucións conservadas xeráronse 127\,400 mostras sintéticas
+adicionais, polo que o conxunto de adestramento pasou de 127\,400 a
+254\,800 mostras. Mantivéronse os mesmos conxuntos de validación e test, de
+maneira que a comparación co AdaBoost adestrado co dataset orixinal fose
+directa.
 
-Esta extensión resulta interesante desde o punto de vista experimental porque permite converter a GAN nunha técnica auxiliar e non só nun clasificador. 
-Porén, a evidencia conservada non é suficiente para ofrecer unha comparación final pechada entre AdaBoost adestrado co dataset orixinal e 
-AdaBoost adestrado co dataset aumentado. O que si pode afirmarse é que a infraestrutura para facelo quedou completamente implementada.
+\begin{table}[H]
+\centering
+\small
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Precision micro} & \textbf{Recall micro} & \textbf{F1 micro} & \textbf{F1 macro} & \textbf{F1 weighted} \\
+\midrule
+AdaBoost con dataset aumentado & 0,9112 & 0,9112 & 0,9112 & 0,9112 & 0,8806 & 0,9078 \\
+\bottomrule
+\end{tabular}
+}
+\caption{Resultados binarios de AdaBoost empregando o dataset aumentado pola GAN}
+\end{table}
+
+O resultado obtido foi moi semellante ao do AdaBoost adestrado co dataset
+orixinal. Co dataset orixinal obtívose unha \emph{accuracy} de 0,9144 e un
+F1 weighted de 0,9106, mentres que co dataset aumentado a \emph{accuracy}
+foi de 0,9112 e o F1 weighted de 0,9078. Polo tanto, a augmentación con datos
+sintéticos non produciu unha mellora apreciábel neste experimento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.90\textwidth]{imagenes/adaboost_aug_binario_convergencia.jpeg}
+    \caption{Converxencia da busca bayesiana de AdaBoost no caso binario empregando o dataset aumentado. O mellor valor mantense arredor de F1 micro $\approx 0{,}91$, moi próximo ao obtido co dataset orixinal.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.70\textwidth]{imagenes/adaboost_aug_binario_espazo.jpeg}
+    \caption{Espazo de parámetros explorado para AdaBoost no caso binario co dataset aumentado. A mellor configuración aparece nunha zona de número alto de estimadores e \emph{learning rate} elevado, semellante ao observado no dataset orixinal.}
+\end{figure}
+
+A explicación máis probábel é que o xerador aínda non reproduce con suficiente
+fidelidade a distribución real dos datos. No adestramento dunha GAN, primeiro
+é habitual que o discriminador aprenda a separar mellor as mostras reais das
+xeradas; só despois, cando esa sinal de erro é útil, o xerador comeza a
+mellorar progresivamente. Aínda que o discriminador acadou bos resultados como
+clasificador, iso non garante que as mostras sintéticas xeradas teñan a mesma
+calidade estatística ca os datos reais. Por este motivo, ao engadilas ao
+adestramento de AdaBoost, o efecto final foi practicamente neutro.
 
 \section{Comparativa}
 
-A comparación entre ambos modelos debe facerse con certa cautela, porque a trazabilidade experimental non é totalmente simétrica. 
-De AdaBoost consérvanse métricas finais de test moi claras; da GAN consérvanse sobre todo trazas de validación e saídas de consola, 
-ademais do fluxo de xeración sintética. Aínda así, o material dispoñíbel permite establecer varias conclusións.
+A comparación entre ambos modelos xa pode facerse con métricas de test no
+escenario binario. AdaBoost ofrece un modelo base rápido e estábel, mentres
+que a GAN require máis axuste e un adestramento máis longo, pero acada mellores
+métricas finais no test binario conservado.
 
 En primeiro lugar, AdaBoost foi o mellor modelo base do traballo. A súa principal vantaxe é a eficiencia: adéstrase rápido, é doado de 
 optimizar e ofrece un rendemento moi competitivo no problema binario. Ademais, a interpretación das súas métricas é directa e permite construír 
 unha memoria máis limpa e reproducíbel.
 
 En segundo lugar, a GAN xustifica a súa presenza como modelo complexo precisamente porque introduce dificultades reais de adestramento. 
-As probas curtas demostraron que a converxencia non chega en poucas épocas; o \emph{dropout}, o hardware e o número de iteracións inflúen 
-moito máis do esperado. Por outra banda, cando se lle dedica tempo dabondo, o discriminador consegue métricas altas en validación e o xerador abre 
-a porta á creación de novos datasets.
+As probas curtas demostraron que a converxencia non chega en poucas épocas; o \emph{dropout}, a configuración do adestramento e o número de iteracións inflúen 
+moito máis do esperado. Por outra banda, cando se lle dedica tempo dabondo, o discriminador consegue
+métricas altas en validación, chegando a unha AUC-ROC próxima a 0,95, e o
+xerador abre a porta á creación de novos datasets.
 
 \begin{table}[H]
 \centering
-\caption{Comparativa cualitativa entre AdaBoost e GAN}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}p{0.22\textwidth} >{\raggedright\arraybackslash}p{0.22\textwidth} >{\raggedright\arraybackslash}p{0.22\textwidth} X}
+\small
+\resizebox{\textwidth}{!}{
+\begin{tabular}{lccccc}
 \toprule
-\textbf{Aspecto} & \textbf{AdaBoost} & \textbf{GAN} & \textbf{Lectura} \\
+\textbf{Modelo} & \textbf{Accuracy} & \textbf{Precision ATTACK} & \textbf{Recall ATTACK} & \textbf{F1 ATTACK} & \textbf{AUC-ROC} \\
 \midrule
-Custo de adestramento & Baixo e rápido. & Moi alto; require milleiros de épocas. & AdaBoost é claramente máis eficiente. \\
-Rendemento documentado & Moi bo en binario; discreto en multiclase. & Malo ao inicio, competitivo tras converxer. & A GAN ten máis teito, pero tamén máis risco. \\
-Estabilidade & Alta. & Moi sensíbel a hiperparámetros e hardware. & A GAN require máis axuste fino. \\
-Interpretabilidade & Maior facilidade para xustificar o comportamento global. & Menor interpretabilidade. & AdaBoost é mellor \emph{baseline} académico. \\
-Valor engadido & Non xera datos novos. & Pode xerar mostras sintéticas e ampliar o \texttt{train}. & A GAN achega utilidade adicional. \\
+AdaBoost & 0,9144 & 0,91 & 0,98 & 0,94 & 0,9474 \\
+AdaBoost con dataset aumentado & 0,9112 & 0,91 & 0,98 & 0,94 & -- \\
+GAN & 0,9327 & 0,9273 & 0,9844 & 0,9550 & 0,9544 \\
 \bottomrule
-\end{tabularx}
+\end{tabular}
+}
+\caption{Comparativa cuantitativa no escenario binario sobre test}
 \end{table}
 
-En resumo, se só se valora a relación entre simplicidade, velocidade e rendemento final, AdaBoost é a mellor opción. Se se valora tamén a 
-experimentación, a capacidade de xerar datos e o interese técnico do proceso, a GAN aporta un valor que vai máis alá da simple clasificación.
+
+O AdaBoost adestrado co dataset aumentado obtivo métricas moi próximas ás do
+AdaBoost adestrado só cos datos reais, pero sen melloralas. Isto indica que,
+nesta configuración, as mostras sintéticas xeradas pola GAN non achegaron
+información adicional suficiente para mellorar a fronteira de decisión do
+modelo base.
+
+En resumo, se se valora a simplicidade, a velocidade e a estabilidade do
+adestramento, AdaBoost é a opción máis práctica. Se se atende ás métricas
+obtidas no test binario conservado, a GAN acada mellores resultados, aínda
+que cun custo de axuste e adestramento maior. Ademais, a GAN achega unha
+utilidade adicional ao permitir xerar mostras sintéticas.
 
 \section{Conclusións}
 
@@ -505,17 +690,22 @@ O traballo permitiu completar o obxectivo principal da práctica: adestrar e
 comparar dous modelos diferentes sobre CIC-IDS2017, partindo do preprocesado
 realizado na primeira entrega e analizando os resultados obtidos.
 
-AdaBoost consolidouse como unha solución base moi forte no escenario binario. Coa configuración axeitada ofreceu métricas altas, un tempo de execución 
-reducido e unha interpretación clara dos resultados. Por iso pode considerarse o modelo máis robusto do traballo.
+AdaBoost consolidouse como unha solución base moi forte no escenario binario.
+Coa configuración axeitada ofreceu métricas altas, un tempo de execución
+reducido e unha interpretación clara dos resultados. Por iso pode considerarse
+o modelo máis práctico e estábel do traballo, aínda que a GAN acadase mellores
+métricas no test binario conservado.
 
-A GAN foi máis esixente. As probas iniciais non chegaron a converxer, pero os
-adestramentos longos demostraron que o discriminador podía acadar resultados
-competitivos en validación. Ademais, o feito de reutilizar o xerador para
-producir novas mostras converte a GAN nunha ferramenta con utilidade máis ampla
-dentro do pipeline experimental.
+A GAN foi máis esixente. As probas iniciais non chegaron a converxer, pero os adestramentos longos demostraron que o discriminador podía acadar resultados
+competitivos tanto en validación como no conxunto de test. Ademais, o feito de reutilizar o xerador para producir novas mostras permitiu
+avaliar a GAN como ferramenta de augmentación de datos, aínda que nesta
+execución concreta non se obtivo unha mellora apreciábel en AdaBoost.
 
-A conclusión global é que o modelo sinxelo ofrece a mellor relación custo-rendemento, mentres que o modelo complexo introduce flexibilidade e posibilidades 
-experimentais adicionais. Esa combinación fai que a comparativa entre ambos sexa rica e académicamente xustificábel.
+A conclusión global é que AdaBoost ofrece a mellor relación entre
+simplicidade, estabilidade e custo de adestramento, mentres que a GAN acada
+mellores métricas no test binario conservado e introduce flexibilidade
+adicional ao permitir a xeración de mostras sintéticas. Esa combinación fai
+que a comparativa entre ambos modelos sexa rica e xustificábel.
 
 \section{Traballo Futuro}
 
@@ -523,25 +713,19 @@ A partir dos resultados obtidos, as principais liñas de mellora serían as
 seguintes:
 
 \begin{itemize}[leftmargin=1.5em]
-    \item Avaliar a GAN sobre o conxunto de test co mesmo nivel de detalle ca
-    AdaBoost, incluíndo \emph{accuracy}, \emph{precision}, \emph{recall},
-    F1-score, AUC-ROC e matriz de confusión.
-
-    \item Realizar unha campaña experimental homoxénea para medir o efecto do
-    dataset aumentado pola GAN sobre AdaBoost, comparando sempre contra o
-    mesmo conxunto de validación e test.
-
-    \item Ampliar a avaliación multiclase de AdaBoost con máis execucións e
-    métricas macro, para analizar mellor o comportamento nas clases menos
-    representadas.
-
-    \item Comparar a formulación adversaria híbrida implementada coa versión
-    baseada só en tráfico benigno, co obxectivo de comprobar cal das dúas
-    resulta máis axeitada para detección de anomalías.
 
     \item Explorar variantes máis específicas da GAN, como GANs condicionais
     ou unha GAN independente por clase, no caso de querer abordar o problema
-    multiclase con maior profundidade.
+    multiclase con maior profundidade. Ademais, esa GAN condicional, unha vez adestrada,
+    podería ser de utilidade (independentemente do seu rendemento en clasificación multiclase)
+    como xerador de mostras sintéticas para adestrar un AdaBoost multiclase mellorado.
+
+    \item Implementar unha búsqueda máis profunda sobre o espazo de parámetros para o caso multiclase de AdaBoost,
+          tanto de puntos iniciais como de profundidade da búsqueda bayesiana, esperando mellorar o seu rendemento, 
+          sobre todo nas clases minoritarias.
+
+
+
 \end{itemize}
 
 \newpage
