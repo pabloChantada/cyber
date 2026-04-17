@@ -1,0 +1,12 @@
+run_id: "98bf17"
+created_at_utc: "2026-04-17T17:11:08.586215+00:00"
+args:
+  batch_size: 2048
+  csv_flush_every: 5
+  epocas: 1500
+  eval_every: 10
+  lr: 0.0001
+  multiclase: True
+  num_workers: 0
+  p_dropout: 0.1
+  z_dim: 16
